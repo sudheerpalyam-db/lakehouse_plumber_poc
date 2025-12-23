@@ -1,0 +1,45 @@
+# Pipeline Configuration
+# Defines DLT pipeline settings with support for project-level defaults and pipeline-specific overrides
+
+# Default configuration for all pipelines
+defaults:
+  development: true
+  continuous: false
+  channel: PREVIEW
+  photon: true
+
+  # Default cluster configuration
+  clusters:
+    - label: default
+      autoscale:
+        min_workers: 1
+        max_workers: 4
+      spark_conf:
+        spark.databricks.delta.preview.enabled: "true"
+      custom_tags:
+        project: sample_lakeflow_pipeline
+        managed_by: lakehouse_plumber
+
+  # Default notification settings
+  notifications: []
+
+  # Default libraries
+  libraries: []
+
+# Pipeline-specific overrides
+pipelines:
+  bronze_ingestion:
+    development: true
+    continuous: false
+    description: "Bronze layer data ingestion from landing zone"
+
+  silver_transforms:
+    development: true
+    continuous: false
+    description: "Silver layer data cleansing and enrichment"
+
+  gold_analytics:
+    development: true
+    continuous: false
+    description: "Gold layer business analytics and aggregations"
+    photon: true

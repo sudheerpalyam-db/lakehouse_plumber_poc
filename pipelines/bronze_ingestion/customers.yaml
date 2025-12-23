@@ -1,0 +1,13 @@
+# Customer Data Ingestion - Bronze Layer
+# Ingests customer data from CSV files using CloudFiles Auto Loader
+
+pipeline: bronze_ingestion
+flowgroup: customer_ingestion
+
+# Use the CSV ingestion template for standard ingestion pattern
+use_template: csv_ingestion_template
+template_parameters:
+  table_name: customers
+  landing_folder: customers
+  delimiter: ","
+  has_header: true

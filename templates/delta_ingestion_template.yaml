@@ -1,0 +1,58 @@
+# Delta Table Ingestion Template
+# Reusable template for reading from Delta tables with CDC support
+
+name: delta_ingestion_template
+description: "Template for ingesting data from existing Delta tables"
+
+parameters:
+  - name: table_name
+    required: true
+    description: "Name of the target table"
+
+  - name: source_database
+    required: true
+    description: "Source database/schema"
+
+  - name: source_table
+    required: true
+    description: "Source table name"
+
+  - name: read_mode
+    required: false
+    default: stream
+    description: "Read mode: stream or batch"
+
+actions:
+  # Load from Delta table
+  - name: load_{{ table_name }}_delta
+    type: load
+    readMode: "{{ read_mode }}"
+    source:
+      type: delta
+      database: "{{ source_database }}"
+      table: "{{ source_table }}"
+    target: v_{{ table_name }}_source
+    description: "Load {{ table_name }} from Delta table {{ source_database }}.{{ source_table }}"
+
+  # Add audit columns
+  - name: transform_{{ table_name }}_audit
+    type: transform
+    transform_type: schema
+    source: v_{{ table_name }}_source
+    target: v_{{ table_name }}_with_audit
+    metadata_columns:
+      - name: _record_hash
+        expression: "xxhash64(*)"
+      - name: _ingestion_timestamp
+        expression: "current_timestamp()"
+      - name: _source_system
+        expression: "lit('delta_{{ source_database }}')"
+
+  # Write to target
+  - name: write_{{ table_name }}
+    type: write
+    source: v_{{ table_name }}_with_audit
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{bronze_schema}"
+      table: "{{ table_name }}"

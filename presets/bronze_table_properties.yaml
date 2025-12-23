@@ -1,0 +1,20 @@
+# Bronze Layer Table Properties Preset
+# Standard configurations for bronze layer streaming tables
+
+name: bronze_table_properties
+description: "Standard Delta table properties for bronze layer"
+
+table_properties:
+  delta.autoOptimize.optimizeWrite: "true"
+  delta.enableChangeDataFeed: "true"
+  delta.deletedFileRetentionDuration: "30 days"
+  delta.logRetentionDuration: "30 days"
+  delta.tuneFileSizesForRewrites: "true"
+
+# Clustering configuration
+cluster_by:
+  enabled: false
+  columns: []
+
+# Partitioning (use sparingly in streaming tables)
+partition_by: []

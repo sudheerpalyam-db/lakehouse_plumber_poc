@@ -1,0 +1,16 @@
+# Gold Layer Table Properties Preset
+# Standard configurations for gold layer materialized views and tables
+
+name: gold_table_properties
+description: "Standard Delta table properties for gold layer"
+
+table_properties:
+  delta.autoOptimize.optimizeWrite: "true"
+  delta.autoOptimize.autoCompact: "true"
+  delta.deletedFileRetentionDuration: "7 days"
+  delta.logRetentionDuration: "90 days"
+
+# Materialized view refresh settings
+refresh:
+  mode: scheduled
+  cron: "0 0 * * *"  # Daily at midnight

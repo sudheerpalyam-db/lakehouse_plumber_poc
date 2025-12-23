@@ -1,0 +1,11 @@
+product_id,product_name,category,price,stock_quantity,supplier_id
+P001,Laptop Pro 15,Electronics,1299.99,50,SUP001
+P002,Wireless Mouse,Electronics,29.99,200,SUP001
+P003,USB-C Hub,Electronics,49.99,150,SUP001
+P004,Office Chair,Furniture,299.99,75,SUP002
+P005,Standing Desk,Furniture,599.99,30,SUP002
+P006,Monitor 27 inch,Electronics,449.99,100,SUP001
+P007,Keyboard Mechanical,Electronics,89.99,120,SUP003
+P008,Webcam HD,Electronics,79.99,80,SUP003
+P009,Desk Lamp LED,Furniture,39.99,200,SUP002
+P010,Notebook Pack,Office Supplies,12.99,500,SUP004

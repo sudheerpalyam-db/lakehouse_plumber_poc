@@ -1,0 +1,74 @@
+# CSV Ingestion Template
+# Reusable template for ingesting CSV files from landing zone to bronze layer
+
+name: csv_ingestion_template
+description: "Standard template for ingesting CSV files with CloudFiles Auto Loader"
+
+parameters:
+  - name: table_name
+    required: true
+    description: "Name of the target table"
+
+  - name: landing_folder
+    required: true
+    description: "Folder name in the landing volume"
+
+  - name: delimiter
+    required: false
+    default: ","
+    description: "CSV delimiter character"
+
+  - name: has_header
+    required: false
+    default: true
+    description: "Whether CSV has header row"
+
+actions:
+  # Load action - Read from CloudFiles (Auto Loader)
+  - name: load_{{ table_name }}_csv
+    type: load
+    readMode: stream
+    source:
+      type: cloudfiles
+      path: "{landing_volume}/{{ landing_folder }}/*.csv"
+      format: csv
+      options:
+        header: "{{ has_header }}"
+        delimiter: "{{ delimiter }}"
+        cloudFiles.schemaEvolutionMode: addNewColumns
+        cloudFiles.inferColumnTypes: "true"
+    target: v_{{ table_name }}_raw
+    description: "Load {{ table_name }} CSV files from landing zone"
+
+  # Transform action - Add operational metadata
+  - name: transform_{{ table_name }}_metadata
+    type: transform
+    transform_type: schema
+    source: v_{{ table_name }}_raw
+    target: v_{{ table_name }}_enriched
+    metadata_columns:
+      - name: _record_hash
+        expression: "xxhash64(*)"
+      - name: _source_file_path
+        expression: "col('_metadata.file_path')"
+      - name: _source_file_name
+        expression: "col('_metadata.file_name')"
+      - name: _source_file_size
+        expression: "col('_metadata.file_size')"
+      - name: _source_file_modification_time
+        expression: "col('_metadata.file_modification_time')"
+      - name: _processing_timestamp
+        expression: "current_timestamp()"
+
+  # Write action - Create streaming table
+  - name: write_{{ table_name }}_bronze
+    type: write
+    source: v_{{ table_name }}_enriched
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{bronze_schema}"
+      table: "{{ table_name }}"
+      properties:
+        delta.autoOptimize.optimizeWrite: "true"
+        delta.enableChangeDataFeed: "true"
+    description: "Write {{ table_name }} to bronze streaming table"

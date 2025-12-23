@@ -1,0 +1,83 @@
+# JSONPlaceholder Comments API Ingestion - Bronze Layer
+# Ingests comments data from the public JSONPlaceholder API
+
+pipeline: api_ingestion
+flowgroup: comments_ingestion
+
+api_config:
+  base_url: "https://jsonplaceholder.typicode.com"
+  endpoint: "/comments"
+  format: json
+
+actions:
+  # Load comments from JSONPlaceholder API
+  - name: load_api_comments
+    type: load
+    readMode: batch
+    source:
+      type: python
+      api_url: "https://jsonplaceholder.typicode.com/comments"
+      description: "Fetch comments from JSONPlaceholder REST API"
+    target: v_api_comments_raw
+
+  # Transform comments data
+  - name: transform_comments_clean
+    type: transform
+    transform_type: sql
+    source: v_api_comments_raw
+    target: v_api_comments_cleaned
+    sql: |
+      SELECT
+        id AS comment_id,
+        postId AS post_id,
+        name AS comment_title,
+        email AS commenter_email,
+        LOWER(SPLIT(email, '@')[1]) AS email_domain,
+        body AS comment_body,
+        LENGTH(body) AS comment_length
+      FROM v_api_comments_raw
+
+  # Data quality expectations
+  - name: validate_comments
+    type: transform
+    transform_type: data_quality
+    source: v_api_comments_cleaned
+    target: v_api_comments_validated
+    expectations:
+      - name: valid_comment_id
+        column: comment_id
+        expectation: not_null
+        action: fail
+      - name: valid_post_id
+        column: post_id
+        expectation: not_null
+        action: warn
+      - name: valid_email
+        column: commenter_email
+        expectation: regex
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+        action: warn
+
+  # Add audit metadata
+  - name: transform_comments_metadata
+    type: transform
+    transform_type: schema
+    source: v_api_comments_validated
+    target: v_api_comments_enriched
+    metadata_columns:
+      - name: _ingestion_timestamp
+        expression: "current_timestamp()"
+      - name: _source_api
+        expression: "lit('jsonplaceholder.typicode.com/comments')"
+      - name: _record_hash
+        expression: "xxhash64(*)"
+
+  # Write to bronze table
+  - name: write_api_comments_bronze
+    type: write
+    source: v_api_comments_enriched
+    write_target:
+      type: table
+      database: "{catalog}.{bronze_schema}"
+      table: api_comments
+    description: "Comments from JSONPlaceholder API"

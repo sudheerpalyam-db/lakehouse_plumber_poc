@@ -1,0 +1,79 @@
+# Products Data Ingestion - Bronze Layer
+# Ingests product catalog from CSV files
+
+pipeline: bronze_ingestion
+flowgroup: products_ingestion
+
+# Full action definition (alternative to using templates)
+actions:
+  # Load product data from CSV files
+  - name: load_products_csv
+    type: load
+    readMode: stream
+    source:
+      type: cloudfiles
+      path: "{landing_volume}/products/*.csv"
+      format: csv
+      options:
+        header: "true"
+        delimiter: ","
+        cloudFiles.schemaEvolutionMode: addNewColumns
+        cloudFiles.inferColumnTypes: "true"
+      schema_hints: |
+        product_id STRING,
+        product_name STRING,
+        category STRING,
+        price DECIMAL(10,2),
+        stock_quantity INT,
+        supplier_id STRING
+    target: v_products_raw
+    description: "Load product CSV files from landing zone"
+
+  # Data quality checks
+  - name: validate_products
+    type: transform
+    transform_type: data_quality
+    source: v_products_raw
+    target: v_products_validated
+    expectations:
+      - name: valid_product_id
+        column: product_id
+        expectation: not_null
+        action: fail
+      - name: valid_product_name
+        column: product_name
+        expectation: not_null
+        action: warn
+      - name: valid_price
+        column: price
+        expectation: range
+        min: 0
+        max: 999999.99
+        action: warn
+
+  # Add operational metadata
+  - name: transform_products_metadata
+    type: transform
+    transform_type: schema
+    source: v_products_validated
+    target: v_products_enriched
+    metadata_columns:
+      - name: _record_hash
+        expression: "xxhash64(*)"
+      - name: _source_file_path
+        expression: "col('_metadata.file_path')"
+      - name: _processing_timestamp
+        expression: "current_timestamp()"
+
+  # Write to bronze streaming table
+  - name: write_products_bronze
+    type: write
+    source: v_products_enriched
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{bronze_schema}"
+      table: products
+      properties:
+        delta.autoOptimize.optimizeWrite: "true"
+        delta.enableChangeDataFeed: "true"
+    description: "Write products to bronze streaming table"

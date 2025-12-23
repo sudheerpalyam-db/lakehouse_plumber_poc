@@ -1,0 +1,149 @@
+# Databricks Asset Bundle Configuration
+# This file defines the deployment configuration for the Lakeflow pipelines
+
+bundle:
+  name: lakehouse_plumber_poc
+
+# Variable definitions for environment-specific values
+variables:
+  catalog:
+    description: "Unity Catalog name"
+    default: spalyam_catalog
+
+  bronze_schema:
+    description: "Bronze layer schema"
+    default: bronze
+
+  silver_schema:
+    description: "Silver layer schema"
+    default: silver
+
+  gold_schema:
+    description: "Gold layer schema"
+    default: gold
+
+  landing_volume:
+    description: "Landing volume path for data ingestion"
+    default: /Volumes/${var.catalog}/raw_data/landing
+
+# Workspace configuration
+workspace:
+  host: https://e2-demo-field-eng.cloud.databricks.com/
+
+# Resource definitions
+resources:
+  pipelines:
+    # Bronze Ingestion Pipeline
+    bronze_ingestion:
+      name: "Bronze Ingestion Pipeline"
+      catalog: "${var.catalog}"
+      target: "${var.bronze_schema}"
+      development: true
+      continuous: false
+      channel: "PREVIEW"
+      serverless: true
+      libraries:
+        - file:
+            path: ./src/bronze_ingestion.py
+      configuration:
+        catalog: ${var.catalog}
+        bronze_schema: ${var.bronze_schema}
+        landing_volume: ${var.landing_volume}
+
+    # Silver Transforms Pipeline
+    silver_transforms:
+      name: "Silver Transforms Pipeline"
+      catalog: "${var.catalog}"
+      target: "${var.silver_schema}"
+      development: true
+      continuous: false
+      channel: "PREVIEW"
+      serverless: true
+      libraries:
+        - file:
+            path: ./src/silver_transforms.py
+      configuration:
+        catalog: ${var.catalog}
+        bronze_schema: ${var.bronze_schema}
+        silver_schema: ${var.silver_schema}
+
+    # Gold Analytics Pipeline
+    gold_analytics:
+      name: "Gold Analytics Pipeline"
+      catalog: "${var.catalog}"
+      target: "${var.gold_schema}"
+      development: true
+      continuous: false
+      channel: "PREVIEW"
+      serverless: true
+      libraries:
+        - file:
+            path: ./src/gold_analytics.py
+      configuration:
+        catalog: ${var.catalog}
+        bronze_schema: ${var.bronze_schema}
+        silver_schema: ${var.silver_schema}
+        gold_schema: ${var.gold_schema}
+
+    # API Ingestion Pipeline (REST API Source)
+    api_ingestion:
+      name: "API Ingestion Pipeline"
+      catalog: "${var.catalog}"
+      target: "${var.bronze_schema}"
+      development: true
+      continuous: false
+      channel: "PREVIEW"
+      serverless: true
+      libraries:
+        - file:
+            path: ./src/api_ingestion.py
+      configuration:
+        catalog: ${var.catalog}
+        bronze_schema: ${var.bronze_schema}
+
+    # API Analytics Pipeline (Silver & Gold)
+    api_analytics:
+      name: "API Analytics Pipeline"
+      catalog: "${var.catalog}"
+      target: "${var.silver_schema}"
+      development: true
+      continuous: false
+      channel: "PREVIEW"
+      serverless: true
+      libraries:
+        - file:
+            path: ./src/api_analytics.py
+      configuration:
+        catalog: ${var.catalog}
+        bronze_schema: ${var.bronze_schema}
+        silver_schema: ${var.silver_schema}
+        gold_schema: ${var.gold_schema}
+
+# Environment-specific targets
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: spalyam_catalog
+
+  staging:
+    mode: development
+    variables:
+      catalog: spalyam_catalog
+
+  prod:
+    mode: production
+    variables:
+      catalog: spalyam_catalog
+    resources:
+      pipelines:
+        bronze_ingestion:
+          development: false
+          continuous: true
+        silver_transforms:
+          development: false
+          continuous: true
+        gold_analytics:
+          development: false
+          continuous: false
