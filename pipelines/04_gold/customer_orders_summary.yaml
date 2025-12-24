@@ -1,0 +1,59 @@
+# Gold layer: Customer Orders Summary - Aggregated view of customer order activity
+pipeline: gold_analytics
+flowgroup: customer_orders_summary
+
+actions:
+  # Load customer dimension from silver (batch mode for materialized view)
+  - name: load_customer_dim
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      database: "{catalog}.{silver_schema}"
+      table: customer_dim
+    target: v_customer_dim
+
+  # Load orders fact from silver (batch mode for materialized view)
+  - name: load_orders_fct
+    type: load
+    readMode: batch
+    source:
+      type: delta
+      database: "{catalog}.{silver_schema}"
+      table: orders_fct
+    target: v_orders_fct
+
+  # Join and aggregate customer orders
+  - name: customer_orders_agg
+    type: transform
+    transform_type: sql
+    source: v_orders_fct
+    target: v_customer_orders_summary
+    sql: |
+      SELECT
+        c.customer_id,
+        c.first_name,
+        c.last_name,
+        c.email,
+        c.city,
+        c.state,
+        c.country,
+        COUNT(o.order_id) as total_orders,
+        SUM(o.quantity * o.unit_price) as total_revenue,
+        AVG(o.quantity * o.unit_price) as avg_order_value,
+        MIN(o.order_date) as first_order_date,
+        MAX(o.order_date) as last_order_date
+      FROM v_customer_dim c
+      LEFT JOIN v_orders_fct o ON c.customer_id = o.customer_id
+      GROUP BY
+        c.customer_id, c.first_name, c.last_name, c.email,
+        c.city, c.state, c.country
+
+  # Write to gold layer as materialized view
+  - name: write_customer_orders_summary
+    type: write
+    source: v_customer_orders_summary
+    write_target:
+      type: materialized_view
+      database: "{catalog}.{gold_schema}"
+      table: "customer_orders_summary"
