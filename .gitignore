@@ -5,7 +5,7 @@
 # LHP artifacts
 .lhp/
 .lhp_state.json
-generated/
+# generated/ - DO NOT ignore, bundle needs to deploy these files
 
 # Python
 __pycache__/

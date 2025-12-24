@@ -1,16 +1,11 @@
-# This pipeline is used to load the customer table from the raw schema into the bronze schema
-# Pipeline variable puts the generate files in the same folder for the pipeline to pick up
+# Bronze layer: Load and cleanse customers from raw schema
 pipeline: bronze_load
-# Flowgroup are conceptual artifacts and has no functional purpose
-# there are used to group actions together in the generated files
 flowgroup: customer_bronze
 
 presets:
   - bronze_layer
 
 actions:
-  # Load is not neceseary here as everything is in the same pipeline
-  # but it kept in case we decide to split the pipelines
   - name: customer_raw_load
     type: load
     operational_metadata: ["_processing_timestamp"]
@@ -18,9 +13,9 @@ actions:
     source:
       type: delta
       database: "{catalog}.{raw_schema}"
-      table: customer
+      table: customers
     target: v_customer_raw
-    description: "Load customer table from raw schema" 
+    description: "Load customers table from raw schema"
 
   - name: customer_bronze_cleanse
     type: transform
@@ -28,38 +23,33 @@ actions:
     source: v_customer_raw
     target: v_customer_bronze_cleaned
     sql: |
-      SELECT 
-        c_custkey as customer_id,
-        c_name as name,
-        c_address as address,
-        c_nationkey as nation_id,
-        c_phone as phone,
-        c_acctbal as account_balance,
-        c_mktsegment as market_segment,
-        c_comment as comment,
+      SELECT
+        customer_id,
+        first_name,
+        last_name,
+        email,
+        phone,
+        address,
+        city,
+        state,
+        country,
+        postal_code,
+        created_date,
         _source_file_path,
         _source_file_size,
         _source_file_modification_time,
         _record_hash,
         _processing_timestamp
       FROM stream(v_customer_raw)
-
-  - name: customer_bronze_DQE
-    type: transform
-    transform_type: data_quality
-    source: v_customer_bronze_cleaned
-    target: v_customer_bronze_DQE
-    readMode: stream  
-    expectations_file: "expectations/customer_quality.json"
-    description: "Apply data quality checks to customer"
+      WHERE customer_id IS NOT NULL
 
   - name: write_customer_bronze
     type: write
-    source: v_customer_bronze_DQE
+    source: v_customer_bronze_cleaned
     write_target:
       type: streaming_table
       database: "{catalog}.{bronze_schema}"
-      table: "customer"
+      table: "customers"
       table_properties:
-        tag_name1: tag_value1
-        tag_name2: tag_value2
+        layer: bronze
+        source: raw_data.customers

@@ -1,51 +1,49 @@
-# Bronze layer: Load and cleanse orders from raw schema
+# Bronze layer: Load and cleanse products from raw schema
 pipeline: bronze_load
-flowgroup: orders_bronze
+flowgroup: products_bronze
 
 presets:
   - bronze_layer
 
 actions:
-  - name: orders_raw_load
+  - name: products_raw_load
     type: load
     operational_metadata: ["_processing_timestamp"]
     readMode: stream
     source:
       type: delta
       database: "{catalog}.{raw_schema}"
-      table: orders
-    target: v_orders_raw
-    description: "Load orders table from raw schema"
+      table: products
+    target: v_products_raw
+    description: "Load products table from raw schema"
 
-  - name: orders_bronze_cleanse
+  - name: products_bronze_cleanse
     type: transform
     transform_type: sql
-    source: v_orders_raw
-    target: v_orders_bronze_cleaned
+    source: v_products_raw
+    target: v_products_bronze_cleaned
     sql: |
       SELECT
-        order_id,
-        customer_id,
         product_id,
-        quantity,
-        unit_price,
-        order_date,
-        status,
+        product_name,
+        category,
+        price,
+        stock_quantity,
         _source_file_path,
         _source_file_size,
         _source_file_modification_time,
         _record_hash,
         _processing_timestamp
-      FROM stream(v_orders_raw)
-      WHERE order_id IS NOT NULL
+      FROM stream(v_products_raw)
+      WHERE product_id IS NOT NULL
 
-  - name: write_orders_bronze
+  - name: write_products_bronze
     type: write
-    source: v_orders_bronze_cleaned
+    source: v_products_bronze_cleaned
     write_target:
       type: streaming_table
       database: "{catalog}.{bronze_schema}"
-      table: "orders"
+      table: "products"
       table_properties:
         layer: bronze
-        source: raw_data.orders
+        source: raw_data.products

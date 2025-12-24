@@ -11,8 +11,8 @@ variables:
 
 include:
   # User-managed resource files (shared across all environments)
-  - resources/*.yml
-  - resources/lhp/*.yml
+-   resources/*.yml
+-   resources/lhp/*.yml
 
 targets:
   # ⚠️ IMPORTANT: Target names MUST match your LHP substitution environment names
