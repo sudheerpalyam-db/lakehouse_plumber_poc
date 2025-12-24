@@ -15,7 +15,7 @@ actions:
     source:
       type: delta
       database: "{catalog}.{bronze_schema}"
-      table: customer
+      table: customers
     target: v_customer_bronze
     description: "Load customer table from silver schema" 
     

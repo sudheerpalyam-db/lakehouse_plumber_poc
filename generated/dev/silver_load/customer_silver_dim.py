@@ -18,7 +18,7 @@ FLOWGROUP_ID = "customer_silver_dim"
 @dp.temporary_view()
 def v_customer_bronze():
     """Load customer table from silver schema"""
-    df = spark.readStream.table("spalyam_catalog.bronze.customer")
+    df = spark.readStream.table("spalyam_catalog.bronze.customers")
 
     # Add operational metadata columns
     df = df.withColumn("_processing_timestamp", F.current_timestamp())
