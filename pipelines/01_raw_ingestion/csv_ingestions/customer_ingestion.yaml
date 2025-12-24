@@ -1,0 +1,11 @@
+# Customers CSV ingestion using template
+pipeline: raw_ingestions
+flowgroup: customers_ingestion
+
+use_template: csv_ingestion_template
+template_parameters:
+  table_name: customers
+  landing_folder: customers
+  table_properties:
+    layer: raw
+    source: csv

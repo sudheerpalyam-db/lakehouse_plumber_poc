@@ -2,6 +2,11 @@
 .databricks/
 .bundle/
 
+# LHP artifacts
+.lhp/
+.lhp_state.json
+generated/
+
 # Python
 __pycache__/
 *.py[cod]

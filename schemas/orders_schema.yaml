@@ -1,0 +1,36 @@
+# Orders schema for lakehouse plumber POC
+name: orders
+version: "1.0"
+description: "Orders fact table schema"
+
+columns:
+  - name: order_id
+    type: STRING
+    nullable: false
+    comment: "Order unique identifier"
+  - name: customer_id
+    type: STRING
+    nullable: false
+    comment: "Customer foreign key"
+  - name: product_id
+    type: STRING
+    nullable: false
+    comment: "Product foreign key"
+  - name: quantity
+    type: INT
+    nullable: true
+    comment: "Order quantity"
+  - name: unit_price
+    type: DECIMAL(10,2)
+    nullable: true
+    comment: "Unit price at time of order"
+  - name: order_date
+    type: DATE
+    nullable: true
+    comment: "Date of order"
+  - name: status
+    type: STRING
+    nullable: true
+    comment: "Order status"
+
+primary_key: [order_id]

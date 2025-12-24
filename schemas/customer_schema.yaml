@@ -1,0 +1,52 @@
+# Customer schema for lakehouse plumber POC
+name: customers
+version: "1.0"
+description: "Customer dimension table schema"
+
+columns:
+  - name: customer_id
+    type: STRING
+    nullable: false
+    comment: "Customer unique identifier"
+  - name: first_name
+    type: STRING
+    nullable: false
+    comment: "Customer first name"
+  - name: last_name
+    type: STRING
+    nullable: false
+    comment: "Customer last name"
+  - name: email
+    type: STRING
+    nullable: true
+    comment: "Customer email address"
+  - name: phone
+    type: STRING
+    nullable: true
+    comment: "Customer phone number"
+  - name: address
+    type: STRING
+    nullable: true
+    comment: "Customer street address"
+  - name: city
+    type: STRING
+    nullable: true
+    comment: "City"
+  - name: state
+    type: STRING
+    nullable: true
+    comment: "State or province"
+  - name: country
+    type: STRING
+    nullable: true
+    comment: "Country"
+  - name: postal_code
+    type: STRING
+    nullable: true
+    comment: "Postal/zip code"
+  - name: created_date
+    type: DATE
+    nullable: true
+    comment: "Customer creation date"
+
+primary_key: [customer_id]

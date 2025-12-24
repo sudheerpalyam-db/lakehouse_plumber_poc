@@ -1,0 +1,28 @@
+# Products schema for lakehouse plumber POC
+name: products
+version: "1.0"
+description: "Products dimension table schema"
+
+columns:
+  - name: product_id
+    type: STRING
+    nullable: false
+    comment: "Product unique identifier"
+  - name: product_name
+    type: STRING
+    nullable: false
+    comment: "Product name"
+  - name: category
+    type: STRING
+    nullable: true
+    comment: "Product category"
+  - name: price
+    type: DECIMAL(10,2)
+    nullable: true
+    comment: "Product list price"
+  - name: stock_quantity
+    type: INT
+    nullable: true
+    comment: "Current stock quantity"
+
+primary_key: [product_id]

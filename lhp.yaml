@@ -1,69 +1,61 @@
-# Lakehouse Plumber Configuration
-# This is the main configuration file for the Lakehouse Plumber project
+# LakehousePlumber Project Configuration
+name: lakehouse_plumber_poc
+version: "1.0"
+description: "Lakehouse Plumber POC - Lakeflow Declarative Pipeline Framework"
+author: "Sudheer Palyam"
+created_date: "2025-12-24"
 
-project:
-  name: lakehouse_plumber_poc
-  description: "Lakehouse Plumber POC - Lakeflow Declarative Pipeline Framework"
+# Optional: Enforce LakehousePlumber version requirements
+# Ensures consistent code generation across development and CI environments
+# required_lhp_version: ">=0.4.1,<0.5.0"  # Allow patch updates within 0.4.x
+# required_lhp_version: "~=0.4.1"          # Equivalent to >=0.4.1,<0.5.0
+# required_lhp_version: "==0.4.1"          # Exact version pin
 
-# Global settings for all pipelines
-settings:
-  # Output directory for generated Python files
-  output_dir: src
+# Optional: Include patterns to filter which YAML files to process
+# By default, all YAML files in the pipelines directory are processed
+# Uncomment and customize the patterns below to filter files
+# include:
+#   - "*.yaml"                    # All YAML files
+#   - "bronze_*.yaml"             # Files starting with "bronze_"
+#   - "silver/**/*.yaml"          # All YAML files in silver subdirectories
+#   - "gold/dimension_*.yaml"     # Dimension files in gold directory
+#   - "!**/temp_*.yaml"           # Exclude temporary files (prefix with !) 
 
-  # Catalog configuration
-  catalog: spalyam_catalog
 
-  # Schema naming convention
-  schemas:
-    raw: raw_data
-    bronze: bronze
-    silver: silver
-    gold: gold
+## Optional: Add operational metadata columns to the generated pipelines
+## These can be used to track the source of the data and the processing of the data
+operational_metadata:
+  columns:
+  
+    _source_file_path:
+      expression: "F.col('_metadata.file_path')"
+      description: "File paths"
+      applies_to: ["view"]
+    
+    _processing_timestamp:
+      expression: "F.current_timestamp()"
+      description: "When the record was processed by the pipeline"
+      applies_to: ["streaming_table", "materialized_view", "view"]
 
-  # Landing volume path for data ingestion
-  landing_volume: /Volumes/{catalog}/raw_data/landing
+    _source_file_name:
+      expression: "F.col('_metadata.file_name')"
+      description: "Name of the input file along with its extension"
+      applies_to: ["view"]
 
-  # Default table properties
-  default_table_properties:
-    delta.autoOptimize.optimizeWrite: "true"
-    delta.enableChangeDataFeed: "true"
+    _source_file_size:
+      expression: "F.col('_metadata.file_size')"
+      description: "Length of the input file, in bytes"
+      applies_to: ["view"]
 
-# Environment-specific overrides
-environments:
-  dev:
-    catalog: spalyam_catalog
-    schemas:
-      raw: raw_data
-      bronze: bronze
-      silver: silver
-      gold: gold
+    _source_file_modification_time:
+      expression: "F.col('_metadata.file_modification_time')"
+      description: "Last modification time of the input file"
+      applies_to: ["view"]
 
-  staging:
-    catalog: spalyam_catalog
-    schemas:
-      raw: stg_raw
-      bronze: stg_bronze
-      silver: stg_silver
-      gold: stg_gold
 
-  prod:
-    catalog: spalyam_catalog
-    schemas:
-      raw: prod_raw
-      bronze: prod_bronze
-      silver: prod_silver
-      gold: prod_gold
-
-# Pipeline definitions
-pipelines:
-  - name: bronze_ingestion
-    description: "Bronze layer data ingestion pipeline"
-    flowgroups_path: pipelines/bronze_ingestion
-
-  - name: silver_transforms
-    description: "Silver layer data transformation pipeline"
-    flowgroups_path: pipelines/silver_transforms
-
-  - name: gold_analytics
-    description: "Gold layer analytics pipeline"
-    flowgroups_path: pipelines/gold_analytics
+    _record_hash:
+      expression: "F.xxhash64(*[F.col(c) for c in df.columns])"
+      description: "Hash of all record fields for change detection"
+      applies_to: ["streaming_table", "materialized_view", "view"]
+      additional_imports:
+        - "from pyspark.sql.functions import hash"

@@ -1,0 +1,11 @@
+# Orders CSV ingestion using template
+pipeline: raw_ingestions
+flowgroup: orders_ingestion
+
+use_template: csv_ingestion_template
+template_parameters:
+  table_name: orders
+  landing_folder: orders
+  table_properties:
+    layer: raw
+    source: csv

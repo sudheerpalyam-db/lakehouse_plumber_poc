@@ -1,149 +1,66 @@
-# Databricks Asset Bundle Configuration
-# This file defines the deployment configuration for the Lakeflow pipelines
-
+# Databricks Asset Bundle for Lakehouse Plumber POC
+# Generated using LHP CLI: lhp init --bundle
 bundle:
   name: lakehouse_plumber_poc
 
-# Variable definitions for environment-specific values
 variables:
-  catalog:
-    description: "Unity Catalog name"
-    default: spalyam_catalog
+  default_pipeline_catalog:
+    description: "Default catalog for pipelines"
+  default_pipeline_schema:
+    description: "Default schema for pipelines"
 
-  bronze_schema:
-    description: "Bronze layer schema"
-    default: bronze
+include:
+  # User-managed resource files (shared across all environments)
+  - resources/*.yml
+  - resources/lhp/*.yml
 
-  silver_schema:
-    description: "Silver layer schema"
-    default: silver
-
-  gold_schema:
-    description: "Gold layer schema"
-    default: gold
-
-  landing_volume:
-    description: "Landing volume path for data ingestion"
-    default: /Volumes/${var.catalog}/raw_data/landing
-
-# Workspace configuration
-workspace:
-  host: https://e2-demo-field-eng.cloud.databricks.com/
-
-# Resource definitions
-resources:
-  pipelines:
-    # Bronze Ingestion Pipeline
-    bronze_ingestion:
-      name: "Bronze Ingestion Pipeline"
-      catalog: "${var.catalog}"
-      target: "${var.bronze_schema}"
-      development: true
-      continuous: false
-      channel: "PREVIEW"
-      serverless: true
-      libraries:
-        - file:
-            path: ./src/bronze_ingestion.py
-      configuration:
-        catalog: ${var.catalog}
-        bronze_schema: ${var.bronze_schema}
-        landing_volume: ${var.landing_volume}
-
-    # Silver Transforms Pipeline
-    silver_transforms:
-      name: "Silver Transforms Pipeline"
-      catalog: "${var.catalog}"
-      target: "${var.silver_schema}"
-      development: true
-      continuous: false
-      channel: "PREVIEW"
-      serverless: true
-      libraries:
-        - file:
-            path: ./src/silver_transforms.py
-      configuration:
-        catalog: ${var.catalog}
-        bronze_schema: ${var.bronze_schema}
-        silver_schema: ${var.silver_schema}
-
-    # Gold Analytics Pipeline
-    gold_analytics:
-      name: "Gold Analytics Pipeline"
-      catalog: "${var.catalog}"
-      target: "${var.gold_schema}"
-      development: true
-      continuous: false
-      channel: "PREVIEW"
-      serverless: true
-      libraries:
-        - file:
-            path: ./src/gold_analytics.py
-      configuration:
-        catalog: ${var.catalog}
-        bronze_schema: ${var.bronze_schema}
-        silver_schema: ${var.silver_schema}
-        gold_schema: ${var.gold_schema}
-
-    # API Ingestion Pipeline (REST API Source)
-    api_ingestion:
-      name: "API Ingestion Pipeline"
-      catalog: "${var.catalog}"
-      target: "${var.bronze_schema}"
-      development: true
-      continuous: false
-      channel: "PREVIEW"
-      serverless: true
-      libraries:
-        - file:
-            path: ./src/api_ingestion.py
-      configuration:
-        catalog: ${var.catalog}
-        bronze_schema: ${var.bronze_schema}
-
-    # API Analytics Pipeline (Silver & Gold)
-    api_analytics:
-      name: "API Analytics Pipeline"
-      catalog: "${var.catalog}"
-      target: "${var.silver_schema}"
-      development: true
-      continuous: false
-      channel: "PREVIEW"
-      serverless: true
-      libraries:
-        - file:
-            path: ./src/api_analytics.py
-      configuration:
-        catalog: ${var.catalog}
-        bronze_schema: ${var.bronze_schema}
-        silver_schema: ${var.silver_schema}
-        gold_schema: ${var.gold_schema}
-
-# Environment-specific targets
 targets:
+  # ⚠️ IMPORTANT: Target names MUST match your LHP substitution environment names
+  # - Each target name should have a corresponding substitutions/{env}.yaml file
+  # LHP automatically adds environment-specific variables to each corresponding target below.
   dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
     mode: development
     default: true
-    variables:
-      catalog: spalyam_catalog
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com/
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}
 
-  staging:
-    mode: development
-    variables:
-      catalog: spalyam_catalog
 
+    variables:
+      default_pipeline_catalog: spalyam_catalog
+      default_pipeline_schema: bronze
+  tst:
+    mode: production
+    workspace:
+      host: <databricks_host>
+      # We explicitly deploy to /Workspace/Users/<USERNAME> to make sure we only have a single copy.
+      root_path: /Workspace/<code_location>/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      permissions:
+      -   service_principal_name: <service_principal_id>
+          level: CAN_MANAGE
+    run_as:
+      service_principal_name: <service_principal_id>
+
+    variables:
+      default_pipeline_catalog: tst_catalog
+      default_pipeline_schema: tst_bronze_schema
   prod:
     mode: production
+    workspace:
+      host: <databricks_host>
+      # We explicitly deploy to /Workspace/Users/<USERNAME> to make sure we only have a single copy.
+      root_path: /Workspace/<code_location>/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      permissions:
+      -   service_principal_name: <service_principal_id>
+          level: CAN_MANAGE
+    run_as:
+      service_principal_name: <service_principal_id>
     variables:
-      catalog: spalyam_catalog
-    resources:
-      pipelines:
-        bronze_ingestion:
-          development: false
-          continuous: true
-        silver_transforms:
-          development: false
-          continuous: true
-        gold_analytics:
-          development: false
-          continuous: false
+      default_pipeline_catalog: prod_catalog
+      default_pipeline_schema: prod_bronze_schema
